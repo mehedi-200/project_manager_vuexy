@@ -38,7 +38,7 @@
           <input
             type="password"
             id="confirm-password"
-            v-model="user.confirm"
+            v-model="user.password_confirmation"
             placeholder="Confirm your password"
             class="form-input"
           />
@@ -57,14 +57,14 @@ interface User {
   name:string,
   email:string,
   password:string,
-  confirm:string
+  password_confirmation:string
 }
 
 const user = reactive <User>({
   name:'',
   email:'',
   password:'',
-  confirm:'',
+  password_confirmation:'',
 
 })
 const submitForm = async ()=>{
