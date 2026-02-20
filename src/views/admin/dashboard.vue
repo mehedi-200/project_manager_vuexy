@@ -1,132 +1,86 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { getDashboard } from '@/api/dashboardApi.ts'
+import { authStore } from '@/stores/authStore.ts'
 
-const stats = [
-  {
-    icon: '📁',
-    title: 'Total Projects',
-    value: '24',
-    change: '+12%',
-    positive: true,
-    color: '#667eea'
-  },
-  {
-    icon: '✅',
-    title: 'Completed',
-    value: '18',
-    change: '+8%',
-    positive: true,
-    color: '#4caf50'
-  },
-  {
-    icon: '⏳',
-    title: 'In Progress',
-    value: '6',
-    change: '-5%',
-    positive: false,
-    color: '#ff9800'
-  },
-  {
-    icon: '📝',
-    title: 'Total Notes',
-    value: '142',
-    change: '+23%',
-    positive: true,
-    color: '#f093fb'
-  }
-]
+const store = authStore()
+const loading = ref(true)
+const error = ref<string | null>(null)
 
-const recentProjects = [
-  {
-    name: 'E-commerce Platform',
-    status: 'In Progress',
-    progress: 75,
-    date: '2026-02-15',
-    priority: 'High'
-  },
-  {
-    name: 'Mobile App Redesign',
-    status: 'Planning',
-    progress: 30,
-    date: '2026-02-14',
-    priority: 'Medium'
-  },
-  {
-    name: 'API Integration',
-    status: 'In Progress',
-    progress: 60,
-    date: '2026-02-13',
-    priority: 'High'
-  },
-  {
-    name: 'Dashboard UI Update',
-    status: 'Completed',
-    progress: 100,
-    date: '2026-02-10',
-    priority: 'Low'
-  }
-]
+const user = ref<any>(null)
+const stats = ref([
+  { icon: '📁', title: 'Total Projects', value: '0', color: '#667eea' },
+  { icon: '✅', title: 'Completed',       value: '0', color: '#4caf50' },
+  { icon: '⏳', title: 'In Progress',     value: '0', color: '#ff9800' },
+  { icon: '🗂️',  title: 'Planning',       value: '0', color: '#f093fb' },
+])
+const recentProjects = ref<any[]>([])
 
-const recentActivities = [
-  {
-    icon: '✅',
-    text: 'Completed task "API Authentication"',
-    time: '2 hours ago',
-    color: '#4caf50'
-  },
-  {
-    icon: '📝',
-    text: 'Added new note to "Mobile App" project',
-    time: '4 hours ago',
-    color: '#667eea'
-  },
-  {
-    icon: '🚀',
-    text: 'Started new project "Marketing Website"',
-    time: '1 day ago',
-    color: '#f093fb'
-  },
-  {
-    icon: '🔄',
-    text: 'Updated roadmap for "E-commerce Platform"',
-    time: '2 days ago',
-    color: '#ff9800'
+onMounted(async () => {
+  try {
+    const res = await getDashboard()
+    const data = res.data.data
+
+    user.value = data.user
+    if (store.user === null) store.user = data.user
+
+    const s = data.stats as { total_projects: number; completed: number; in_progress: number; planning: number }
+    const sv = stats.value
+    if (sv[0]) sv[0].value = String(s.total_projects ?? 0)
+    if (sv[1]) sv[1].value = String(s.completed ?? 0)
+    if (sv[2]) sv[2].value = String(s.in_progress ?? 0)
+    if (sv[3]) sv[3].value = String(s.planning ?? 0)
+
+    recentProjects.value = data.recent_projects
+  } catch (e: any) {
+    error.value = 'Failed to load dashboard data.'
+  } finally {
+    loading.value = false
   }
-]
+})
+
+const statusClass = (status: string) => status.replace('_', '-')
+const formatDate = (d: string) => new Date(d).toLocaleDateString()
 </script>
 
 <template>
   <div class="dashboard">
-    <!-- Page Header -->
-    <div class="dashboard-header">
-      <div>
-        <h1 class="page-title">Dashboard</h1>
-        <p class="page-subtitle">Welcome back! Here's your project overview</p>
-      </div>
-      <button class="btn-primary">
-        <span>➕</span>
-        New Project
-      </button>
+    <!-- Loading -->
+    <div v-if="loading" class="dashboard-loading">
+      <span class="spinner"></span> Loading dashboard...
     </div>
 
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-      <div v-for="(stat, index) in stats" :key="index" class="stat-card">
-        <div class="stat-icon" :style="{ background: stat.color + '20', color: stat.color }">
-          {{ stat.icon }}
-        </div>
-        <div class="stat-content">
-          <p class="stat-title">{{ stat.title }}</p>
-          <h2 class="stat-value">{{ stat.value }}</h2>
-          <p :class="['stat-change', { positive: stat.positive, negative: !stat.positive }]">
-            {{ stat.change }} from last month
+    <template v-else>
+      <!-- Error -->
+      <div v-if="error" class="dashboard-error">{{ error }}</div>
+
+      <!-- Page Header -->
+      <div class="dashboard-header">
+        <div>
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle">
+            Welcome back, <strong>{{ user?.name ?? 'User' }}</strong>! Here's your project overview.
           </p>
         </div>
+        <button class="btn-primary">
+          <span>➕</span>
+          New Project
+        </button>
       </div>
-    </div>
 
-    <!-- Main Content Grid -->
-    <div class="content-grid">
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div v-for="(stat, index) in stats" :key="index" class="stat-card">
+          <div class="stat-icon" :style="{ background: stat.color + '20', color: stat.color }">
+            {{ stat.icon }}
+          </div>
+          <div class="stat-content">
+            <p class="stat-title">{{ stat.title }}</p>
+            <h2 class="stat-value">{{ stat.value }}</h2>
+          </div>
+        </div>
+      </div>
+
       <!-- Recent Projects -->
       <div class="dashboard-card">
         <div class="card-header">
@@ -134,17 +88,16 @@ const recentActivities = [
           <a href="#" class="card-link">View All →</a>
         </div>
         <div class="card-content">
+          <div v-if="recentProjects.length === 0" class="empty-state">
+            No projects yet. Create your first project!
+          </div>
           <div v-for="(project, index) in recentProjects" :key="index" class="project-item">
             <div class="project-info">
               <h4 class="project-name">{{ project.name }}</h4>
               <div class="project-meta">
-                <span :class="['project-status', project.status.toLowerCase().replace(' ', '-')]">
-                  {{ project.status }}
-                </span>
-                <span class="project-date">{{ project.date }}</span>
-                <span :class="['project-priority', 'priority-' + project.priority.toLowerCase()]">
-                  {{ project.priority }}
-                </span>
+                <span :class="['project-status', statusClass(project.status)]">{{ project.status.replace('_', ' ') }}</span>
+                <span class="project-date">{{ formatDate(project.created_at) }}</span>
+                <span :class="['project-priority', 'priority-' + project.priority]">{{ project.priority }}</span>
               </div>
             </div>
             <div class="project-progress">
@@ -157,48 +110,17 @@ const recentActivities = [
         </div>
       </div>
 
-      <!-- Recent Activities -->
-      <div class="dashboard-card">
-        <div class="card-header">
-          <h3 class="card-title">Recent Activities</h3>
-          <a href="#" class="card-link">View All →</a>
-        </div>
-        <div class="card-content">
-          <div v-for="(activity, index) in recentActivities" :key="index" class="activity-item">
-            <div class="activity-icon" :style="{ background: activity.color + '20', color: activity.color }">
-              {{ activity.icon }}
-            </div>
-            <div class="activity-content">
-              <p class="activity-text">{{ activity.text }}</p>
-              <span class="activity-time">{{ activity.time }}</span>
-            </div>
-          </div>
+      <!-- Quick Actions -->
+      <div class="quick-actions-card">
+        <h3 class="card-title">Quick Actions</h3>
+        <div class="quick-actions-grid">
+          <button class="quick-action-btn"><span class="action-icon">📁</span><span class="action-label">Create Project</span></button>
+          <button class="quick-action-btn"><span class="action-icon">📝</span><span class="action-label">Add Note</span></button>
+          <button class="quick-action-btn"><span class="action-icon">📊</span><span class="action-label">View Reports</span></button>
+          <button class="quick-action-btn"><span class="action-icon">⚙️</span><span class="action-label">Settings</span></button>
         </div>
       </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="quick-actions-card">
-      <h3 class="card-title">Quick Actions</h3>
-      <div class="quick-actions-grid">
-        <button class="quick-action-btn">
-          <span class="action-icon">📁</span>
-          <span class="action-label">Create Project</span>
-        </button>
-        <button class="quick-action-btn">
-          <span class="action-icon">📝</span>
-          <span class="action-label">Add Note</span>
-        </button>
-        <button class="quick-action-btn">
-          <span class="action-icon">📊</span>
-          <span class="action-label">View Reports</span>
-        </button>
-        <button class="quick-action-btn">
-          <span class="action-icon">⚙️</span>
-          <span class="action-label">Settings</span>
-        </button>
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -207,6 +129,45 @@ const recentActivities = [
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* Loading */
+.dashboard-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 60px;
+  justify-content: center;
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(102, 126, 234, 0.3);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.dashboard-error {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  opacity: 0.5;
+  font-size: 15px;
 }
 
 /* Page Header */
@@ -254,13 +215,12 @@ const recentActivities = [
 /* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
   margin-bottom: 32px;
 }
 
 .stat-card {
-  background: inherit;
   border: 1px solid rgba(102, 126, 234, 0.2);
   border-radius: 12px;
   padding: 20px;
@@ -286,47 +246,15 @@ const recentActivities = [
   flex-shrink: 0;
 }
 
-.stat-content {
-  flex: 1;
-}
+.stat-title { font-size: 14px; opacity: 0.7; margin-bottom: 8px; }
+.stat-value { font-size: 32px; font-weight: 700; }
 
-.stat-title {
-  font-size: 14px;
-  opacity: 0.7;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.stat-change {
-  font-size: 13px;
-}
-
-.stat-change.positive {
-  color: #4caf50;
-}
-
-.stat-change.negative {
-  color: #f44336;
-}
-
-/* Content Grid */
-.content-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-.dashboard-card {
-  background: inherit;
+/* Card */
+.dashboard-card, .quick-actions-card {
   border: 1px solid rgba(102, 126, 234, 0.2);
   border-radius: 12px;
   padding: 24px;
+  margin-bottom: 24px;
 }
 
 .card-header {
@@ -338,27 +266,10 @@ const recentActivities = [
   border-bottom: 1px solid rgba(102, 126, 234, 0.2);
 }
 
-.card-title {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.card-link {
-  color: #667eea;
-  font-size: 14px;
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-}
-
-.card-link:hover {
-  opacity: 0.7;
-}
-
-.card-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+.card-title { font-size: 18px; font-weight: 600; }
+.card-link { color: #667eea; font-size: 14px; text-decoration: none; }
+.card-link:hover { opacity: 0.7; }
+.card-content { display: flex; flex-direction: column; gap: 16px; }
 
 /* Project Item */
 .project-item {
@@ -369,151 +280,28 @@ const recentActivities = [
   border-radius: 8px;
   transition: background-color 0.2s ease;
 }
+.project-item:hover { background: rgba(102, 126, 234, 0.05); }
+.project-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.project-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; }
 
-.project-item:hover {
-  background: rgba(102, 126, 234, 0.05);
-}
+.project-status { padding: 4px 10px; border-radius: 6px; font-weight: 500; text-transform: capitalize; }
+.project-status.in-progress { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
+.project-status.planning    { background: rgba(102, 126, 234, 0.2); color: #667eea; }
+.project-status.completed   { background: rgba(76, 175, 80, 0.2); color: #4caf50; }
 
-.project-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.project-date { opacity: 0.6; }
 
-.project-name {
-  font-size: 15px;
-  font-weight: 600;
-}
+.project-priority { padding: 4px 10px; border-radius: 6px; font-weight: 500; text-transform: capitalize; }
+.priority-high   { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+.priority-medium { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
+.priority-low    { background: rgba(158, 158, 158, 0.2); color: #9e9e9e; }
 
-.project-meta {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  font-size: 13px;
-}
-
-.project-status {
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-weight: 500;
-}
-
-.project-status.in-progress {
-  background: rgba(255, 152, 0, 0.2);
-  color: #ff9800;
-}
-
-.project-status.planning {
-  background: rgba(102, 126, 234, 0.2);
-  color: #667eea;
-}
-
-.project-status.completed {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
-}
-
-.project-date {
-  opacity: 0.6;
-}
-
-.project-priority {
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-weight: 500;
-}
-
-.priority-high {
-  background: rgba(244, 67, 54, 0.2);
-  color: #f44336;
-}
-
-.priority-medium {
-  background: rgba(255, 152, 0, 0.2);
-  color: #ff9800;
-}
-
-.priority-low {
-  background: rgba(158, 158, 158, 0.2);
-  color: #9e9e9e;
-}
-
-.project-progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.progress-bar {
-  flex: 1;
-  height: 8px;
-  background: rgba(102, 126, 234, 0.2);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 13px;
-  font-weight: 600;
-  opacity: 0.7;
-}
-
-/* Activity Item */
-.activity-item {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
-}
-
-.activity-item:hover {
-  background: rgba(102, 126, 234, 0.05);
-}
-
-.activity-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.activity-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.activity-text {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.activity-time {
-  font-size: 12px;
-  opacity: 0.6;
-}
+.project-progress { display: flex; align-items: center; gap: 12px; }
+.progress-bar { flex: 1; height: 8px; background: rgba(102, 126, 234, 0.2); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 4px; transition: width 0.3s ease; }
+.progress-text { font-size: 13px; font-weight: 600; opacity: 0.7; }
 
 /* Quick Actions */
-.quick-actions-card {
-  background: inherit;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  border-radius: 12px;
-  padding: 24px;
-}
-
 .quick-actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -527,11 +315,11 @@ const recentActivities = [
   align-items: center;
   gap: 12px;
   padding: 24px;
-  background: inherit;
   border: 1px solid rgba(102, 126, 234, 0.2);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
+  background: inherit;
 }
 
 .quick-action-btn:hover {
@@ -540,57 +328,21 @@ const recentActivities = [
   transform: translateY(-2px);
 }
 
-.action-icon {
-  font-size: 32px;
-}
-
-.action-label {
-  font-size: 14px;
-  font-weight: 500;
-}
+.action-icon { font-size: 32px; }
+.action-label { font-size: 14px; font-weight: 500; }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 768px) {
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .btn-primary {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-actions-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .dashboard-header { flex-direction: column; align-items: flex-start; }
+  .btn-primary { width: 100%; justify-content: center; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 480px) {
-  .page-title {
-    font-size: 1.5rem;
-  }
-
-  .stat-value {
-    font-size: 24px;
-  }
-
-  .quick-actions-grid {
-    grid-template-columns: 1fr;
-  }
+  .page-title { font-size: 1.5rem; }
+  .stat-value { font-size: 24px; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .quick-actions-grid { grid-template-columns: 1fr; }
 }
 </style>
