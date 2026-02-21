@@ -10,6 +10,9 @@ import Forbidden from '@/views/Forbidden.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(_to, _from, savedPosition) {
+    return savedPosition ?? { top: 0 }
+  },
   routes: [
     {
       path: '/',
@@ -43,6 +46,28 @@ const router = createRouter({
           path:'',
           name:'dashboard',
           component:dashboard
+        },
+        {
+          path: 'projects',
+          name: 'projects',
+          component: () => import('@/views/admin/projects/ProjectListPage.vue')
+        },
+        {
+          path: 'projects/:id',
+          name: 'project-details',
+          component: () => import('@/views/admin/projects/ProjectDetailsPage.vue')
+        },
+        {
+          path: 'profile',
+          name: 'profile',
+          meta: { requiresAuth: true },
+          component: () => import('@/views/admin/ProfilePage.vue')
+        },
+        {
+          path: 'settings',
+          name: 'settings',
+          meta: { requiresAuth: true },
+          component: () => import('@/views/admin/SettingsPage.vue')
         },
       ]
     },

@@ -3,8 +3,9 @@ import Header from '@/components/admin/header.vue'
 import Sidebar from '@/components/admin/sidebar.vue'
 import Footer from '@/components/admin/footer.vue'
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useTheme } from '@/composables/useTheme.ts'
 
-const isDark = ref(false)
+const { isDark, setDark } = useTheme()
 const isSidebarOpen = ref(false)
 const isMobile = ref(false)
 
@@ -27,7 +28,7 @@ const checkScreenSize = () => {
 }
 
 const darkFunction = (dark: boolean) => {
-  isDark.value = dark
+  setDark(dark)
 }
 
 const sideBarOpen = () => {

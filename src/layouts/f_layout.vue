@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useRoute,useRouter } from 'vue-router'
 import { ref, onMounted, watch } from 'vue'
+import { authStore as useAuthStore } from '../stores/authStore'
 const router = useRouter();
+const authStore = useAuthStore();
 const isDark = ref(false)
 
 // Load theme preference from localStorage
@@ -32,7 +34,7 @@ const toggleTheme = () => {
         <router-link class="logo" to="/">Project Manager</router-link>
         <nav class="nav">
           <router-link to="/">Home</router-link>
-          <div @click="router.push('/admin')">Dashboard</div>
+          <div v-if="authStore.isLoggedIn" @click="router.push('/admin')">Dashboard</div>
           <router-link to="/login">Login</router-link>
           <router-link to="/register">Register</router-link>
           <button class="theme-toggle" @click="toggleTheme" :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
