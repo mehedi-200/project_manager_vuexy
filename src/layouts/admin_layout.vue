@@ -2,6 +2,8 @@
 import Header from '@/components/admin/header.vue'
 import Sidebar from '@/components/admin/sidebar.vue'
 import Footer from '@/components/admin/footer.vue'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
+import AppNotification from '@/components/ui/AppNotification.vue'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useTheme } from '@/composables/useTheme.ts'
 
@@ -73,6 +75,8 @@ const closeSidebarOnMobile = () => {
     </div>
 
     <Footer/>
+    <ConfirmModal />
+    <AppNotification />
   </div>
 </template>
 

@@ -11,7 +11,7 @@ export const usePhaseStore = defineStore('phaseStore', () => {
     loading.value = true
     try {
       const res = await phasesApi.getPhases(projectId)
-      phases.value = res.data.data
+      phases.value = Array.isArray(res.data.data) ? res.data.data : []
     } catch (e: any) {
       throw e
     } finally {

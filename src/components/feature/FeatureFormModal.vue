@@ -47,11 +47,12 @@ watch(
         dependency_feature_id: f.dependency_feature_id ?? null,
       }
     } else {
+      const maxSerial = props.features.reduce((max, f) => Math.max(max, f.serial_number ?? 0), 0)
       form.value = {
         title: '', description: '', phase_id: undefined,
         priority: 'medium', status: 'pending',
         estimated_hours: undefined, day_number: undefined,
-        serial_number: undefined, dependency_feature_id: null,
+        serial_number: maxSerial + 1, dependency_feature_id: null,
       }
     }
   },

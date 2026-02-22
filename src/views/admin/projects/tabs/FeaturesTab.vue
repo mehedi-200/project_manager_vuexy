@@ -33,12 +33,8 @@ const drawerFeature = ref<Feature | null>(null)
 const canEdit = computed(() => ['admin', 'manager'].includes(props.currentRole ?? ''))
 
 onMounted(async () => {
-  if (!featureStore.features.length) {
-    await featureStore.fetchFeatures(props.projectId)
-  }
-  if (!phaseStore.phases.length) {
-    await phaseStore.fetchPhases(props.projectId)
-  }
+  await featureStore.fetchFeatures(props.projectId)
+  await phaseStore.fetchPhases(props.projectId)
 })
 
 function closeDrawer() {
@@ -94,9 +90,16 @@ async function handleDelete(feature: Feature) {
 async function handleStatusChange(id: number, status: Feature['status']) {
   try {
     await featureStore.updateStatus(id, status)
-    addToast('Status updated', 'success')
   } catch {
     addToast('Failed to update status', 'error')
+  }
+}
+
+async function handleReorder(id: number, direction: 'up' | 'down') {
+  try {
+    await featureStore.reorderFeature(id, direction)
+  } catch {
+    addToast('Failed to reorder', 'error')
   }
 }
 </script>
@@ -146,9 +149,11 @@ async function handleStatusChange(id: number, status: Feature['status']) {
         :phases="phaseStore.phases"
         :filter-status="filterStatus"
         :filter-priority="filterPriority"
+        :can-edit="canEdit"
         @edit="openEdit"
         @delete="handleDelete"
         @status-change="handleStatusChange"
+        @reorder="handleReorder"
         @open="openDrawer"
       />
       <FeatureKanban

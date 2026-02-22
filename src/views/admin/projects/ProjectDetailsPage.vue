@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/useProjectStore.ts'
 import { useMemberStore } from '@/stores/useMemberStore.ts'
 import { authStore } from '@/stores/authStore.ts'
 import AppBreadcrumb from '@/components/ui/AppBreadcrumb.vue'
-import ToastContainer from '@/components/ui/ToastContainer.vue'
-import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import ProjectFormModal from '@/components/project/ProjectFormModal.vue'
 import OverviewTab from './tabs/OverviewTab.vue'
 import PhasesTab from './tabs/PhasesTab.vue'
@@ -15,13 +13,16 @@ import MembersTab from './tabs/MembersTab.vue'
 import ActivityTab from './tabs/ActivityTab.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import { useToast } from '@/composables/useToast.ts'
+import { useConfirm } from '@/composables/useConfirm.ts'
 import type { Project } from '@/types/index.ts'
 
 const route = useRoute()
+const router = useRouter()
 const projectStore = useProjectStore()
 const memberStore = useMemberStore()
 const store = authStore()
 const { addToast } = useToast()
+const { ask } = useConfirm()
 
 const projectId = computed(() => Number(route.params.id))
 const activeTab = ref<'overview' | 'phases' | 'features' | 'members' | 'activity'>('overview')
@@ -64,7 +65,7 @@ onMounted(async () => {
   }
 })
 
-async function handleEditSaved(data: Project) {
+async function handleEditSaved(data: Partial<Project>) {
   if (!projectStore.currentProject) return
   saving.value = true
   try {
@@ -75,6 +76,19 @@ async function handleEditSaved(data: Project) {
     addToast(e?.response?.data?.message || 'Failed to update project', 'error')
   } finally {
     saving.value = false
+  }
+}
+
+async function handleDelete() {
+  if (!projectStore.currentProject) return
+  const confirmed = await ask(`Delete "${projectStore.currentProject.name}"? This cannot be undone.`)
+  if (!confirmed) return
+  try {
+    await projectStore.deleteProject(projectStore.currentProject.id)
+    addToast('Project deleted', 'success')
+    router.push({ name: 'projects' })
+  } catch (e: any) {
+    addToast(e?.response?.data?.message || 'Failed to delete project', 'error')
   }
 }
 </script>
@@ -99,6 +113,10 @@ async function handleEditSaved(data: Project) {
       <!-- Page Header -->
       <div class="page-header">
         <h1 class="page-title">{{ projectStore.currentProject.name }}</h1>
+        <div class="page-header-actions">
+          <button class="btn-edit" @click="showEditModal = true">✏️ Edit</button>
+          <button class="btn-delete" @click="handleDelete">🗑️ Delete</button>
+        </div>
       </div>
 
       <!-- Tabs -->
@@ -152,9 +170,6 @@ async function handleEditSaved(data: Project) {
       @saved="handleEditSaved"
       @close="showEditModal = false"
     />
-
-    <ConfirmModal />
-    <ToastContainer />
   </div>
 </template>
 
@@ -168,8 +183,21 @@ async function handleEditSaved(data: Project) {
   gap: 20px;
 }
 
-.page-header { }
+.page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .page-title { font-size: 1.8rem; font-weight: 700; }
+.page-header-actions { display: flex; gap: 10px; }
+.btn-edit {
+  padding: 8px 18px; border: 1px solid rgba(102,126,234,0.35); color: #667eea;
+  background: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-edit:hover { background: rgba(102,126,234,0.1); }
+.btn-delete {
+  padding: 8px 18px; border: 1px solid rgba(244,67,54,0.35); color: #f44336;
+  background: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-delete:hover { background: rgba(244,67,54,0.1); }
 
 .tabs-nav {
   display: flex;

@@ -5,7 +5,7 @@ export const authStore = defineStore('authStore',{
   state:()=>({
     isLoggedIn: !!localStorage.getItem('token'),
     token: localStorage.getItem('token') as string | null,
-    user: null as any,
+    user: (() => { try { const u = localStorage.getItem('user'); return u ? JSON.parse(u) : null } catch { return null } })() as any,
   }),
   actions:{
     async register(User: any) {
@@ -25,6 +25,7 @@ export const authStore = defineStore('authStore',{
         this.user = res.data.data.user;
         this.isLoggedIn = true;
         localStorage.setItem('token', res.data.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.data.user));
         return res;
       } catch (e) {
         throw e;
@@ -40,6 +41,7 @@ export const authStore = defineStore('authStore',{
         this.user = null;
         this.isLoggedIn = false;
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
       }
     }
   }

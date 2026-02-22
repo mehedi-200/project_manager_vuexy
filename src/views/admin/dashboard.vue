@@ -22,7 +22,10 @@ onMounted(async () => {
     const data = res.data.data
 
     user.value = data.user
-    if (store.user === null) store.user = data.user
+    if (store.user === null) {
+      store.user = data.user
+      localStorage.setItem('user', JSON.stringify(data.user))
+    }
 
     const s = data.stats as { total_projects: number; completed: number; in_progress: number; planning: number }
     const sv = stats.value

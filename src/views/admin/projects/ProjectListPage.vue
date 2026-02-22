@@ -6,8 +6,6 @@ import ProjectFormModal from '@/components/project/ProjectFormModal.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Badge from '@/components/ui/Badge.vue'
-import ConfirmModal from '@/components/ui/ConfirmModal.vue'
-import ToastContainer from '@/components/ui/ToastContainer.vue'
 import { useToast } from '@/composables/useToast.ts'
 import { useConfirm } from '@/composables/useConfirm.ts'
 import type { Project } from '@/types/index.ts'
@@ -41,7 +39,13 @@ function openCreate() {
   showModal.value = true
 }
 
-async function handleSaved(data: Project) {
+function openEdit(project: Project) {
+  modalMode.value = 'edit'
+  editingProject.value = project
+  showModal.value = true
+}
+
+async function handleSaved(data: Partial<Project>) {
   saving.value = true
   try {
     if (modalMode.value === 'create') {
@@ -55,18 +59,8 @@ async function handleSaved(data: Project) {
   } catch (e: any) {
     addToast(e?.response?.data?.message || 'Failed to save project', 'error')
   } finally {
+    await projectStore.fetchProjects();
     saving.value = false
-  }
-}
-
-async function handleArchive(project: Project) {
-  const confirmed = await ask(`Archive "${project.name}"?`)
-  if (!confirmed) return
-  try {
-    await projectStore.updateProject(project.id, { status: 'archived' })
-    addToast('Project archived', 'success')
-  } catch {
-    addToast('Failed to archive project', 'error')
   }
 }
 
@@ -121,7 +115,7 @@ async function handleDelete(project: Project) {
       >
         <div class="card-top">
           <h3 class="card-name">{{ p.name }}</h3>
-          <Badge type="status" :value="p.status" />
+          <Badge type="status" :value="p.is_active" />
         </div>
 
         <p v-if="p.description" class="card-desc">{{ p.description }}</p>
@@ -143,10 +137,10 @@ async function handleDelete(project: Project) {
 
         <div class="card-actions" @click.stop>
           <button
-            class="action-btn archive-btn"
-            title="Archive"
-            @click="handleArchive(p)"
-          >📦 Archive</button>
+            class="action-btn edit-btn"
+            title="Edit"
+            @click="openEdit(p)"
+          >✏️ Edit</button>
           <button
             class="action-btn delete-btn"
             title="Delete"
@@ -164,9 +158,6 @@ async function handleDelete(project: Project) {
       @saved="handleSaved"
       @close="showModal = false"
     />
-
-    <ConfirmModal />
-    <ToastContainer />
   </div>
 </template>
 
@@ -259,8 +250,8 @@ async function handleDelete(project: Project) {
   border-radius: 6px; font-size: 12px; font-weight: 600;
   cursor: pointer; transition: all 0.2s; flex: 1;
 }
-.archive-btn { border: 1px solid rgba(255,152,0,0.3); color: #e65100; }
-.archive-btn:hover { background: rgba(255,152,0,0.1); }
+.archive-btn, .edit-btn { border: 1px solid rgba(102,126,234,0.3); color: #667eea; }
+.archive-btn:hover, .edit-btn:hover { background: rgba(102,126,234,0.1); }
 .delete-btn { border: 1px solid rgba(244,67,54,0.3); color: #f44336; }
 .delete-btn:hover { background: rgba(244,67,54,0.1); }
 

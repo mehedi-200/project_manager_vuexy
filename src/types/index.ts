@@ -4,7 +4,7 @@ export interface Project {
   description?: string
   start_date?: string
   deadline?: string
-  status: 'active' | 'completed' | 'archived'
+  is_active: 0 | 1
   features_count?: number
   completed_features_count?: number
   progress?: number

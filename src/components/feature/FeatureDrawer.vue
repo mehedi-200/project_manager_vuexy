@@ -206,10 +206,10 @@ function formatDate(d: string) {
               <div class="comments-list">
                 <div v-if="comments.length === 0" class="no-comments">No comments yet.</div>
                 <div v-for="c in comments" :key="c.id" class="comment-item">
-                  <div class="comment-avatar">{{ c.user.name.charAt(0).toUpperCase() }}</div>
+                  <div class="comment-avatar">{{ c.user?.name?.charAt(0)?.toUpperCase() ?? '?' }}</div>
                   <div class="comment-content">
                     <div class="comment-meta">
-                      <span class="comment-author">{{ c.user.name }}</span>
+                      <span class="comment-author">{{ c.user?.name ?? 'Unknown' }}</span>
                       <span class="comment-date">{{ formatDate(c.created_at) }}</span>
                       <button
                         v-if="store.user?.id === c.user.id"

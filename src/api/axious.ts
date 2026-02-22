@@ -16,3 +16,19 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear all auth state
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      // Redirect to login (use window.location to work outside Vue context)
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)

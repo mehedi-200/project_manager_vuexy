@@ -1,14 +1,22 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   type: 'priority' | 'status' | 'role'
-  value: string
+  value: string | number
 }>()
+
+function label(v: string | number): string {
+  if (props.type === 'status' && typeof v === 'number') return v === 1 ? 'Active' : 'Inactive'
+  return String(v).replace('_', ' ')
+}
+
+function cls(v: string | number): string {
+  if (props.type === 'status' && typeof v === 'number') return `badge-status-${v === 1 ? 'active' : 'inactive'}`
+  return `badge-${props.type}-${String(v).replace('_', '-')}`
+}
 </script>
 
 <template>
-  <span :class="['badge', `badge-${type}-${value.replace('_', '-')}`]">
-    {{ value.replace('_', ' ') }}
-  </span>
+  <span :class="['badge', cls(value)]">{{ label(value) }}</span>
 </template>
 
 <style scoped>
@@ -41,6 +49,7 @@ defineProps<{
 
 /* Project Status */
 .badge-status-active    { background: rgba(33,150,243,0.15); color: #1565c0; }
+.badge-status-inactive  { background: rgba(158,158,158,0.15); color: #616161; }
 .badge-status-completed { background: rgba(76,175,80,0.15);  color: #2e7d32; }
 .badge-status-archived  { background: rgba(158,158,158,0.15); color: #616161; }
 </style>

@@ -9,7 +9,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'saved', project: Project): void
+  (e: 'saved', data: Partial<Project>): void
   (e: 'close'): void
 }>()
 
@@ -18,7 +18,7 @@ const form = ref({
   description: '',
   start_date: '',
   deadline: '',
-  status: 'active' as Project['status'],
+  is_active: 1 as 0 | 1,
 })
 
 watch(
@@ -30,36 +30,39 @@ watch(
         description: p.description ?? '',
         start_date: p.start_date ?? '',
         deadline: p.deadline ?? '',
-        status: p.status,
+        is_active: p.is_active,
       }
     } else {
-      form.value = { name: '', description: '', start_date: '', deadline: '', status: 'active' }
+      form.value = { name: '', description: '', start_date: '', deadline: '', is_active: 1 }
     }
   },
   { immediate: true }
 )
 
 const errors = ref<Record<string, string>>({})
-const saving = ref(false)
 const { isDark } = useTheme()
 
-async function handleSubmit() {
+function close() {
+  emit('close')
+}
+
+function handleSubmit() {
   errors.value = {}
   if (!form.value.name.trim()) {
     errors.value.name = 'Name is required'
     return
   }
-  emit('saved', form.value as unknown as Project)
+  emit('saved', { ...form.value })
 }
 </script>
 
 <template>
   <teleport to="body">
-    <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal-overlay" @click.self="close">
       <div :class="['modal-box', { dark: isDark }]">
         <div class="modal-header">
           <h2 class="modal-title">{{ mode === 'create' ? '➕ New Project' : '✏️ Edit Project' }}</h2>
-          <button class="modal-close" @click="$emit('close')">✕</button>
+          <button type="button" class="modal-close" @click="close">✕</button>
         </div>
 
         <form class="modal-form" @submit.prevent="handleSubmit">
@@ -87,17 +90,16 @@ async function handleSubmit() {
 
           <div class="form-group">
             <label class="form-label">Status</label>
-            <select v-model="form.status" class="form-input form-select">
-              <option value="active">Active</option>
-              <option value="completed">Completed</option>
-              <option value="archived">Archived</option>
+            <select v-model="form.is_active" class="form-input form-select">
+              <option :value="1">Active</option>
+              <option :value="0">Inactive</option>
             </select>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn-cancel" @click="$emit('close')">Cancel</button>
-            <button type="submit" class="btn-primary" :disabled="saving">
-              {{ saving ? 'Saving...' : (mode === 'create' ? 'Create Project' : 'Save Changes') }}
+            <button type="button" class="btn-cancel" @click="close">Cancel</button>
+            <button type="submit" class="btn-primary">
+              {{ mode === 'create' ? 'Create Project' : 'Save Changes' }}
             </button>
           </div>
         </form>

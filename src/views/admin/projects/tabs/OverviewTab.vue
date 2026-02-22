@@ -27,7 +27,7 @@ function formatDate(d?: string) {
         <div class="info-card-icon">📊</div>
         <div class="info-card-content">
           <span class="info-card-label">Status</span>
-          <Badge type="status" :value="project.status" />
+          <Badge type="status" :value="project.is_active" />
         </div>
       </div>
 
