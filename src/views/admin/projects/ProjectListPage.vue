@@ -6,6 +6,7 @@ import ProjectFormModal from '@/components/project/ProjectFormModal.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import Badge from '@/components/ui/Badge.vue'
+import AppPagination from '@/components/ui/AppPagination.vue'
 import { useToast } from '@/composables/useToast.ts'
 import { useConfirm } from '@/composables/useConfirm.ts'
 import type { Project } from '@/types/index.ts'
@@ -20,13 +21,17 @@ const modalMode = ref<'create' | 'edit'>('create')
 const editingProject = ref<Project | undefined>(undefined)
 const saving = ref(false)
 
-onMounted(async () => {
-  try {
-    await projectStore.fetchProjects()
-  } catch {
-    // error state set in store
-  }
-})
+onMounted(() => projectStore.fetchProjects(1))
+
+async function changePage(page: number) {
+  await projectStore.fetchProjects(page)
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+async function changePerPage(perPage: number) {
+  await projectStore.fetchProjects(1, perPage)
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 function formatDate(d?: string) {
   if (!d) return '—'
@@ -56,10 +61,10 @@ async function handleSaved(data: Partial<Project>) {
       addToast('Project updated!', 'success')
     }
     showModal.value = false
+    await projectStore.fetchProjects(projectStore.pagination.current_page)
   } catch (e: any) {
     addToast(e?.response?.data?.message || 'Failed to save project', 'error')
   } finally {
-    await projectStore.fetchProjects();
     saving.value = false
   }
 }
@@ -70,6 +75,7 @@ async function handleDelete(project: Project) {
   try {
     await projectStore.deleteProject(project.id)
     addToast('Project deleted', 'success')
+    await projectStore.fetchProjects(projectStore.pagination.current_page)
   } catch {
     addToast('Failed to delete project', 'error')
   }
@@ -115,15 +121,25 @@ async function handleDelete(project: Project) {
       >
         <div class="card-top">
           <h3 class="card-name">{{ p.name }}</h3>
-          <Badge type="status" :value="p.is_active" />
+          <div class="card-badges">
+            <Badge type="status" :value="p.is_active" />
+            <span class="status-label">{{ p.status?.label }}</span>
+          </div>
         </div>
 
-        <p v-if="p.description" class="card-desc">{{ p.description }}</p>
+        <p class="card-desc">{{ p.description || '—' }}</p>
 
         <div class="card-meta">
-          <span v-if="p.deadline" class="meta-item">⏰ {{ formatDate(p.deadline) }}</span>
+          <span class="meta-item">📅 {{ formatDate(p.start_date) }}</span>
+          <span class="meta-item">⏰ {{ formatDate(p.deadline) }}</span>
+        </div>
+
+        <div class="card-meta">
+          <span class="meta-item">👤 {{ p.owner?.name ?? '—' }}</span>
           <span class="meta-item">🎯 {{ p.features_count ?? 0 }} features</span>
         </div>
+
+        <div class="card-spacer"></div>
 
         <div class="card-progress">
           <div class="progress-row">
@@ -136,19 +152,24 @@ async function handleDelete(project: Project) {
         </div>
 
         <div class="card-actions" @click.stop>
-          <button
-            class="action-btn edit-btn"
-            title="Edit"
-            @click="openEdit(p)"
-          >✏️ Edit</button>
-          <button
-            class="action-btn delete-btn"
-            title="Delete"
-            @click="handleDelete(p)"
-          >🗑️ Delete</button>
+          <button class="action-btn edit-btn" @click="openEdit(p)">✏️ Edit</button>
+          <button class="action-btn delete-btn" @click="handleDelete(p)">🗑️ Delete</button>
         </div>
       </div>
     </div>
+
+    <!-- Pagination -->
+    <AppPagination
+      v-if="!projectStore.loading && projectStore.projects.length > 0"
+      :current-page="projectStore.pagination.current_page"
+      :last-page="projectStore.pagination.last_page"
+      :total="projectStore.pagination.total"
+      :per-page="projectStore.pagination.per_page"
+      :from="projectStore.pagination.from"
+      :to="projectStore.pagination.to"
+      @change="changePage"
+      @per-page-change="changePerPage"
+    />
 
     <!-- Modals -->
     <ProjectFormModal
@@ -203,57 +224,148 @@ async function handleDelete(project: Project) {
 }
 
 .project-card {
-  background: var(--card-bg, white);
-  border: 1px solid rgba(102,126,234,0.2);
-  border-radius: 12px;
+  background: white;
+  border: 1px solid #e8ecf4;
+  border-radius: 14px;
   padding: 20px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 .project-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 30px rgba(102,126,234,0.15);
-  border-color: rgba(102,126,234,0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(102,126,234,0.13);
+  border-color: rgba(102,126,234,0.35);
+}
+.admin-layout.dark .project-card {
+  background: #1e2435;
+  border-color: rgba(255,255,255,0.08);
 }
 
-.admin-layout.dark .project-card { background: #2d2d2d; }
-
+/* Top: name + badges */
 .card-top {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
 }
-.card-name { font-size: 16px; font-weight: 700; line-height: 1.3; flex: 1; }
+.card-name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  flex: 1;
+  /* clamp to 2 lines so all cards same name height */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 40px;
+}
+.card-badges {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
 
+/* Description — always 2 lines height */
 .card-desc {
-  font-size: 13px; opacity: 0.65; line-height: 1.5;
-  display: -webkit-box; -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical; overflow: hidden;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 40px;
+}
+.admin-layout.dark .card-desc { color: #94a3b8; }
+
+/* Meta rows */
+.card-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.meta-item {
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.admin-layout.dark .meta-item { color: #94a3b8; }
+
+/* Spacer pushes progress + actions to bottom */
+.card-spacer { flex: 1; }
+
+/* Progress */
+.card-progress { }
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.progress-label { font-size: 11px; color: #94a3b8; font-weight: 500; }
+.progress-pct { font-size: 11px; font-weight: 700; color: #667eea; }
+.progress-bar {
+  height: 5px;
+  background: #f1f3f9;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 99px;
+  transition: width 0.4s ease;
 }
 
-.card-meta { display: flex; flex-wrap: wrap; gap: 10px; }
-.meta-item { font-size: 12px; opacity: 0.6; }
-
-.card-progress { }
-.progress-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
-.progress-label { font-size: 12px; opacity: 0.6; }
-.progress-pct { font-size: 12px; font-weight: 700; color: #667eea; }
-.progress-bar { height: 6px; background: rgba(102,126,234,0.12); border-radius: 3px; overflow: hidden; }
-.progress-fill { height: 100%; background: linear-gradient(135deg,#667eea,#764ba2); border-radius: 3px; transition: width 0.4s; }
-
-.card-actions { display: flex; gap: 8px; padding-top: 4px; border-top: 1px solid rgba(102,126,234,0.1); }
+/* Actions — always at bottom */
+.card-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f3f9;
+}
+.admin-layout.dark .card-actions { border-top-color: rgba(255,255,255,0.07); }
 
 .action-btn {
-  padding: 6px 12px; background: none;
-  border-radius: 6px; font-size: 12px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; flex: 1;
+  flex: 1;
+  padding: 7px 0;
+  background: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: center;
 }
-.archive-btn, .edit-btn { border: 1px solid rgba(102,126,234,0.3); color: #667eea; }
-.archive-btn:hover, .edit-btn:hover { background: rgba(102,126,234,0.1); }
-.delete-btn { border: 1px solid rgba(244,67,54,0.3); color: #f44336; }
-.delete-btn:hover { background: rgba(244,67,54,0.1); }
+.edit-btn {
+  border: 1px solid rgba(102,126,234,0.3);
+  color: #667eea;
+}
+.edit-btn:hover { background: rgba(102,126,234,0.08); }
+.delete-btn {
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #ef4444;
+}
+.delete-btn:hover { background: rgba(239,68,68,0.08); }
+
+.status-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(245,158,11,0.12);
+  color: #b45309;
+}
 
 @media (max-width: 768px) {
   .page-header { flex-direction: column; align-items: flex-start; }

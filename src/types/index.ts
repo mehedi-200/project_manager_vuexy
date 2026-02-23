@@ -4,9 +4,11 @@ export interface Project {
   description?: string
   start_date?: string
   deadline?: string
+  status: { value: number; label: string }
   is_active: 0 | 1
+  owner?: { id: number; name: string }
+  created_by?: { id: number; name: string }
   features_count?: number
-  completed_features_count?: number
   progress?: number
 }
 

@@ -68,7 +68,7 @@ function formatDate(d?: string) {
         <div class="info-card-content">
           <span class="info-card-label">Features</span>
           <span class="info-card-value">
-            {{ project.completed_features_count ?? 0 }} / {{ project.features_count ?? 0 }}
+            {{ project.features_count ?? 0 }} features
           </span>
         </div>
       </div>
