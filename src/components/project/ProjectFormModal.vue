@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import type { Project } from '@/types/index.ts'
 import { useTheme } from '@/composables/useTheme.ts'
 
@@ -21,9 +21,14 @@ const form = ref({
   is_active: 1 as 0 | 1,
 })
 
+const errors = ref<Record<string, string>>({})
+const { isDark } = useTheme()
+const today = computed(() => new Date().toISOString().split('T')[0])
+
 watch(
   () => props.project,
   (p) => {
+    errors.value = {}
     if (p) {
       form.value = {
         name: p.name,
@@ -39,19 +44,48 @@ watch(
   { immediate: true }
 )
 
-const errors = ref<Record<string, string>>({})
-const { isDark } = useTheme()
+function validate(): boolean {
+  const e: Record<string, string> = {}
+
+  if (!form.value.name.trim()) {
+    e.name = 'Project name is required.'
+  } else if (form.value.name.trim().length < 3) {
+    e.name = 'Name must be at least 3 characters.'
+  } else if (form.value.name.trim().length > 100) {
+    e.name = 'Name must not exceed 100 characters.'
+  }
+
+  if (!form.value.start_date) {
+    e.start_date = 'Start date is required.'
+  } else if (form.value.start_date < (today.value ?? '')) {
+    e.start_date = 'Start date cannot be in the past.'
+  } else if (form.value.deadline && form.value.start_date >= form.value.deadline) {
+    e.start_date = 'Start date cannot be the same as or after the deadline.'
+  }
+
+  if (!form.value.deadline) {
+    e.deadline = 'Deadline is required.'
+  } else if (form.value.deadline < (today.value ?? '')) {
+    e.deadline = 'Deadline cannot be in the past.'
+  } else if (form.value.start_date && form.value.deadline <= form.value.start_date) {
+    e.deadline = 'Deadline cannot be the same as or before the start date.'
+  }
+
+  errors.value = e
+  return Object.keys(e).length === 0
+}
+
+function clearError(field: string) {
+  if (errors.value[field]) delete errors.value[field]
+}
 
 function close() {
+  errors.value = {}
   emit('close')
 }
 
 function handleSubmit() {
-  errors.value = {}
-  if (!form.value.name.trim()) {
-    errors.value.name = 'Name is required'
-    return
-  }
+  if (!validate()) return
   emit('saved', { ...form.value })
 }
 </script>
@@ -60,34 +94,70 @@ function handleSubmit() {
   <teleport to="body">
     <div class="modal-overlay" @click.self="close">
       <div :class="['modal-box', { dark: isDark }]">
+
         <div class="modal-header">
           <h2 class="modal-title">{{ mode === 'create' ? '➕ New Project' : '✏️ Edit Project' }}</h2>
           <button type="button" class="modal-close" @click="close">✕</button>
         </div>
 
-        <form class="modal-form" @submit.prevent="handleSubmit">
+        <form class="modal-form" @submit.prevent="handleSubmit" novalidate>
+
+          <!-- Name -->
           <div class="form-group">
-            <label class="form-label">Name <span class="required">*</span></label>
-            <input v-model="form.name" type="text" class="form-input" :class="{ error: errors.name }" placeholder="Project name" />
+            <label class="form-label">
+              Project Name <span class="required">*</span>
+            </label>
+            <input
+              v-model="form.name"
+              type="text"
+              class="form-input"
+              :class="{ 'is-error': errors.name }"
+              placeholder="Enter project name"
+              maxlength="100"
+              @input="clearError('name')"
+            />
             <span v-if="errors.name" class="form-error">{{ errors.name }}</span>
           </div>
 
+          <!-- Description -->
           <div class="form-group">
             <label class="form-label">Description</label>
-            <textarea v-model="form.description" class="form-input form-textarea" placeholder="Project description..."></textarea>
+            <textarea
+              v-model="form.description"
+              class="form-input form-textarea"
+              placeholder="Project description..."
+            ></textarea>
           </div>
 
+          <!-- Dates -->
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Start Date</label>
-              <input v-model="form.start_date" type="date" class="form-input" />
+              <input
+                v-model="form.start_date"
+                type="date"
+                class="form-input"
+                :class="{ 'is-error': errors.start_date }"
+                :min="today"
+                @change="clearError('start_date'); clearError('deadline')"
+              />
+              <span v-if="errors.start_date" class="form-error">{{ errors.start_date }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">Deadline</label>
-              <input v-model="form.deadline" type="date" class="form-input" />
+              <input
+                v-model="form.deadline"
+                type="date"
+                class="form-input"
+                :class="{ 'is-error': errors.deadline }"
+                :min="form.start_date || today"
+                @change="clearError('deadline'); clearError('start_date')"
+              />
+              <span v-if="errors.deadline" class="form-error">{{ errors.deadline }}</span>
             </div>
           </div>
 
+          <!-- Status -->
           <div class="form-group">
             <label class="form-label">Status</label>
             <select v-model="form.is_active" class="form-input form-select">
@@ -102,6 +172,7 @@ function handleSubmit() {
               {{ mode === 'create' ? 'Create Project' : 'Save Changes' }}
             </button>
           </div>
+
         </form>
       </div>
     </div>
@@ -172,7 +243,7 @@ function handleSubmit() {
   color: inherit;
 }
 .form-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.12); }
-.form-input.error { border-color: #f44336; }
+.form-input.is-error { border-color: #f44336; }
 
 .form-textarea { resize: vertical; min-height: 90px; }
 .form-select { cursor: pointer; }
