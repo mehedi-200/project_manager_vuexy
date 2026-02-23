@@ -94,7 +94,7 @@ async function handleDelete(project: Project) {
     </div>
 
     <!-- Loading -->
-    <SkeletonLoader v-if="projectStore.loading" :count="6" height="180px" />
+    <SkeletonLoader v-if="projectStore.loading" type="card" :count="6" />
 
     <!-- Error -->
     <div v-else-if="projectStore.error" class="error-banner">

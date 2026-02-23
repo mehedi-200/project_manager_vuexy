@@ -55,8 +55,7 @@ async function handleDelete() {
 
 <template>
   <div class="project-details">
-    <SkeletonLoader v-if="projectStore.loading" :count="1" height="40px" />
-    <SkeletonLoader v-if="projectStore.loading" :count="3" height="100px" style="margin-top:16px" />
+    <SkeletonLoader v-if="projectStore.loading" type="detail" />
 
     <template v-else-if="projectStore.currentProject">
       <AppBreadcrumb

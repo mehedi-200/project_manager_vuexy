@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { getDashboard } from '@/api/dashboardApi.ts'
 import { authStore } from '@/stores/authStore.ts'
+import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 
 const store = authStore()
 const loading = ref(true)
@@ -49,9 +50,14 @@ const formatDate = (d: string) => new Date(d).toLocaleDateString()
 <template>
   <div class="dashboard">
     <!-- Loading -->
-    <div v-if="loading" class="dashboard-loading">
-      <span class="spinner"></span> Loading dashboard...
-    </div>
+    <template v-if="loading">
+      <div class="sk-header-placeholder">
+        <div class="sk sk-page-title"></div>
+        <div class="sk sk-page-subtitle mt4"></div>
+      </div>
+      <SkeletonLoader type="stat" :count="4" />
+      <SkeletonLoader type="row" :count="5" style="margin-top:24px" />
+    </template>
 
     <template v-else>
       <!-- Error -->
@@ -134,28 +140,18 @@ const formatDate = (d: string) => new Date(d).toLocaleDateString()
   margin: 0 auto;
 }
 
-/* Loading */
-.dashboard-loading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 60px;
-  justify-content: center;
-  font-size: 16px;
-  opacity: 0.7;
+/* Loading skeleton helpers */
+.sk-header-placeholder { margin-bottom: 24px; }
+.sk {
+  background: linear-gradient(90deg, #e8ecf4 25%, #d1d9ee 50%, #e8ecf4 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 8px;
 }
-
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(102, 126, 234, 0.3);
-  border-top-color: #667eea;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.sk-page-title  { height: 28px; width: 200px; }
+.sk-page-subtitle { height: 14px; width: 300px; }
+.mt4 { margin-top: 4px; }
 
 .dashboard-error {
   background: rgba(244, 67, 54, 0.1);
