@@ -187,6 +187,9 @@ async function handleDelete(project: Project) {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
@@ -221,6 +224,8 @@ async function handleDelete(project: Project) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+  flex: 1;
+  align-content: start;
 }
 
 .project-card {

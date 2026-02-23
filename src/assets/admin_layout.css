@@ -222,6 +222,8 @@
   padding: 24px;
   transition: margin-left 0.3s ease;
   min-height: calc(100vh - 60px - 50px);
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-main.sidebar-collapsed {

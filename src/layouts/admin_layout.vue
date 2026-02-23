@@ -70,7 +70,7 @@ const closeSidebarOnMobile = () => {
       <div v-if="isMobile && isSidebarOpen" class="sidebar-overlay" @click="isSidebarOpen = false"></div>
 
       <main :class="['admin-main', { 'sidebar-collapsed': !isSidebarOpen }]">
-        <router-view></router-view>
+        <router-view style="flex:1;display:flex;flex-direction:column;"></router-view>
       </main>
     </div>
 
