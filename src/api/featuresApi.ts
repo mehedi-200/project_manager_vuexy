@@ -1,14 +1,16 @@
 import { api } from '@/api/axious.ts'
-import type { Feature } from '@/types/index.ts'
 
-export const getFeatures = (projectId: number) => api.get(`/projects/${projectId}/features`)
+export const getFeatures = (projectId: number, params?: { per_page?: number; page?: number }) =>
+  api.get(`/projects/${projectId}/features`, { params })
 
-export const createFeature = (projectId: number, data: Partial<Feature>) =>
-  api.post(`/projects/${projectId}/features`, data)
+export const createFeature = (projectId: number, data: object) =>
+  api.post(`/projects/${projectId}/features/store`, data)
 
-export const updateFeature = (id: number, data: Partial<Feature>) => api.patch(`/features/${id}`, data)
+export const showFeature = (projectId: number, id: number) =>
+  api.get(`/projects/${projectId}/features/show/${id}`)
 
-export const updateFeatureStatus = (id: number, status: Feature['status']) =>
-  api.patch(`/features/${id}/status`, { status })
+export const updateFeature = (projectId: number, id: number, data: object) =>
+  api.post(`/projects/${projectId}/features/update/${id}`, data)
 
-export const deleteFeature = (id: number) => api.delete(`/features/${id}`)
+export const deleteFeature = (projectId: number, id: number) =>
+  api.get(`/projects/${projectId}/features/delete/${id}`)

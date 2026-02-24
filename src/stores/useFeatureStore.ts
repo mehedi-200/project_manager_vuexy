@@ -7,12 +7,19 @@ export const useFeatureStore = defineStore('featureStore', () => {
   const features = ref<Feature[]>([])
   const currentFeature = ref<Feature | null>(null)
   const loading = ref(false)
+  const pagination = ref<any>(null)
+  const currentProjectId = ref<number>(0)
 
-  async function fetchFeatures(projectId: number) {
+  async function fetchFeatures(projectId: number, page = 1, perPage?: number) {
+    currentProjectId.value = projectId
     loading.value = true
     try {
-      const res = await featuresApi.getFeatures(projectId)
-      features.value = Array.isArray(res.data.data) ? res.data.data : []
+      const params: any = { page }
+      if (perPage) params.per_page = perPage
+      const res = await featuresApi.getFeatures(projectId, params)
+      const data = res.data.data
+      features.value = Array.isArray(data.features) ? data.features : []
+      pagination.value = data.pagination ?? null
     } catch (e: any) {
       throw e
     } finally {
@@ -20,7 +27,7 @@ export const useFeatureStore = defineStore('featureStore', () => {
     }
   }
 
-  async function createFeature(projectId: number, data: Partial<Feature>) {
+  async function createFeature(projectId: number, data: object) {
     try {
       const res = await featuresApi.createFeature(projectId, data)
       const feature: Feature = res.data.data
@@ -31,9 +38,9 @@ export const useFeatureStore = defineStore('featureStore', () => {
     }
   }
 
-  async function updateFeature(id: number, data: Partial<Feature>) {
+  async function updateFeature(id: number, data: object) {
     try {
-      const res = await featuresApi.updateFeature(id, data)
+      const res = await featuresApi.updateFeature(currentProjectId.value, id, data)
       const updated: Feature = res.data.data
       const idx = features.value.findIndex(f => f.id === id)
       if (idx !== -1) features.value[idx] = updated
@@ -44,13 +51,15 @@ export const useFeatureStore = defineStore('featureStore', () => {
     }
   }
 
-  async function updateStatus(id: number, status: Feature['status']) {
-    // optimistic update
+  async function updateStatus(id: number, statusValue: number) {
     const idx = features.value.findIndex(f => f.id === id)
-    const oldStatus = idx !== -1 ? features.value[idx]!.status : null
-    if (idx !== -1) features.value[idx]!.status = status
+    const oldStatus = idx !== -1 ? { ...features.value[idx]!.status } : null
+    if (idx !== -1) {
+      const labels: Record<number, string> = { 1: 'Pending', 2: 'In Progress', 3: 'Completed' }
+      features.value[idx]!.status = { value: statusValue, label: labels[statusValue] ?? '' }
+    }
     try {
-      const res = await featuresApi.updateFeatureStatus(id, status)
+      const res = await featuresApi.updateFeature(currentProjectId.value, id, { status: statusValue })
       const updated: Feature = res.data.data
       if (idx !== -1) features.value[idx] = updated
       if (currentFeature.value?.id === id) currentFeature.value = updated
@@ -65,7 +74,7 @@ export const useFeatureStore = defineStore('featureStore', () => {
     const backup = [...features.value]
     features.value = features.value.filter(f => f.id !== id)
     try {
-      await featuresApi.deleteFeature(id)
+      await featuresApi.deleteFeature(currentProjectId.value, id)
     } catch (e: any) {
       features.value = backup
       throw e
@@ -73,29 +82,28 @@ export const useFeatureStore = defineStore('featureStore', () => {
   }
 
   async function reorderFeature(id: number, direction: 'up' | 'down') {
-    const sorted = [...features.value].sort((a, b) => (a.serial_number ?? 9999) - (b.serial_number ?? 9999))
+    const sorted = [...features.value].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999))
     const idx = sorted.findIndex(f => f.id === id)
     if (idx === -1) return
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1
     if (swapIdx < 0 || swapIdx >= sorted.length) return
     const curr = sorted[idx]!
     const swap = sorted[swapIdx]!
-    const currSerial = curr.serial_number ?? idx + 1
-    const swapSerial = swap.serial_number ?? swapIdx + 1
-    // optimistic
-    curr.serial_number = swapSerial
-    swap.serial_number = currSerial
+    const currOrder = curr.order ?? idx + 1
+    const swapOrder = swap.order ?? swapIdx + 1
+    curr.order = swapOrder
+    swap.order = currOrder
     try {
       await Promise.all([
-        featuresApi.updateFeature(curr.id, { serial_number: curr.serial_number }),
-        featuresApi.updateFeature(swap.id, { serial_number: swap.serial_number }),
+        featuresApi.updateFeature(currentProjectId.value, curr.id, { order: curr.order }),
+        featuresApi.updateFeature(currentProjectId.value, swap.id, { order: swap.order }),
       ])
     } catch (e: any) {
-      curr.serial_number = currSerial
-      swap.serial_number = swapSerial
+      curr.order = currOrder
+      swap.order = swapOrder
       throw e
     }
   }
 
-  return { features, currentFeature, loading, fetchFeatures, createFeature, updateFeature, updateStatus, deleteFeature, reorderFeature }
+  return { features, currentFeature, loading, pagination, fetchFeatures, createFeature, updateFeature, updateStatus, deleteFeature, reorderFeature }
 })

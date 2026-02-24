@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useFeatureStore } from '@/stores/useFeatureStore.ts'
-import { usePhaseStore } from '@/stores/usePhaseStore.ts'
 import FeatureTable from '@/components/feature/FeatureTable.vue'
 import FeatureKanban from '@/components/feature/FeatureKanban.vue'
 import FeatureFormModal from '@/components/feature/FeatureFormModal.vue'
@@ -18,7 +17,6 @@ const props = defineProps<{
 }>()
 
 const featureStore = useFeatureStore()
-const phaseStore = usePhaseStore()
 const { addToast } = useToast()
 const { ask } = useConfirm()
 
@@ -30,20 +28,14 @@ const modalMode = ref<'create' | 'edit'>('create')
 const editingFeature = ref<Feature | undefined>(undefined)
 const drawerFeature = ref<Feature | null>(null)
 
-const canEdit = computed(() => ['admin', 'manager'].includes(props.currentRole ?? ''))
+const canEdit = computed(() => props.currentRole ? ['admin', 'manager'].includes(props.currentRole) : true)
 
 onMounted(async () => {
   await featureStore.fetchFeatures(props.projectId)
-  await phaseStore.fetchPhases(props.projectId)
 })
 
-function closeDrawer() {
-  drawerFeature.value = null
-}
-
-function closeModal() {
-  showModal.value = false
-}
+function closeDrawer() { drawerFeature.value = null }
+function closeModal() { showModal.value = false }
 
 function openCreate() {
   modalMode.value = 'create'
@@ -61,7 +53,7 @@ function openDrawer(feature: Feature) {
   drawerFeature.value = feature
 }
 
-async function handleSaved(data: Partial<Feature>) {
+async function handleSaved(data: object) {
   try {
     if (modalMode.value === 'create') {
       await featureStore.createFeature(props.projectId, data)
@@ -87,9 +79,9 @@ async function handleDelete(feature: Feature) {
   }
 }
 
-async function handleStatusChange(id: number, status: Feature['status']) {
+async function handleStatusChange(id: number, statusValue: number) {
   try {
-    await featureStore.updateStatus(id, status)
+    await featureStore.updateStatus(id, statusValue)
   } catch {
     addToast('Failed to update status', 'error')
   }
@@ -116,19 +108,19 @@ async function handleReorder(id: number, direction: 'up' | 'down') {
       <div class="filters">
         <select v-model="filterStatus" class="filter-select">
           <option value="">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="in_progress">In Progress</option>
-          <option value="done">Done</option>
+          <option value="1">Pending</option>
+          <option value="2">In Progress</option>
+          <option value="3">Completed</option>
         </select>
         <select v-model="filterPriority" class="filter-select">
           <option value="">All Priority</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
+          <option value="1">Low</option>
+          <option value="2">Medium</option>
+          <option value="3">High</option>
         </select>
       </div>
 
-      <button v-if="canEdit" class="btn-primary" @click="openCreate">➕ Add Feature</button>
+      <button class="btn-primary" @click="openCreate">➕ Add Feature</button>
     </div>
 
     <SkeletonLoader v-if="featureStore.loading" :count="4" height="50px" />
@@ -138,7 +130,7 @@ async function handleReorder(id: number, direction: 'up' | 'down') {
       icon="🎯"
       title="No features yet"
       message="Break your project into features and track progress."
-      :action-label="canEdit ? 'Add First Feature' : undefined"
+      action-label="Add First Feature"
       @action="openCreate"
     />
 
@@ -146,7 +138,6 @@ async function handleReorder(id: number, direction: 'up' | 'down') {
       <FeatureTable
         v-if="viewMode === 'table'"
         :features="featureStore.features"
-        :phases="phaseStore.phases"
         :filter-status="filterStatus"
         :filter-priority="filterPriority"
         :can-edit="canEdit"
@@ -159,7 +150,6 @@ async function handleReorder(id: number, direction: 'up' | 'down') {
       <FeatureKanban
         v-else
         :features="featureStore.features"
-        :phases="phaseStore.phases"
         @open="openDrawer"
         @status-change="handleStatusChange"
       />
@@ -170,15 +160,12 @@ async function handleReorder(id: number, direction: 'up' | 'down') {
       :mode="modalMode"
       :feature="editingFeature"
       :project-id="projectId"
-      :phases="phaseStore.phases"
-      :features="featureStore.features"
       @saved="handleSaved"
       @close="closeModal"
     />
 
     <FeatureDrawer
       :feature="drawerFeature"
-      :phases="phaseStore.phases"
       @close="closeDrawer"
     />
   </div>
@@ -199,8 +186,7 @@ async function handleReorder(id: number, direction: 'up' | 'down') {
 }
 .toggle-btn {
   padding: 8px 14px; background: none; border: none; cursor: pointer;
-  font-size: 13px; font-weight: 500; color: inherit;
-  transition: all 0.2s;
+  font-size: 13px; font-weight: 500; color: inherit; transition: all 0.2s;
 }
 .toggle-btn.active { background: rgba(102,126,234,0.15); color: #667eea; font-weight: 700; }
 .toggle-btn:hover:not(.active) { background: rgba(102,126,234,0.06); }

@@ -22,17 +22,22 @@ export interface Phase {
 export interface Feature {
   id: number
   project_id: number
-  phase_id?: number
   title: string
   description?: string
-  priority: 'low' | 'medium' | 'high'
-  status: 'pending' | 'in_progress' | 'done'
+  status: { value: number; label: string }
+  priority: { value: number; label: string }
+  start_date: string
+  start_time: string
+  end_date: string
+  end_time: string
   estimated_hours?: number
-  day_number?: number
-  serial_number?: number
-  dependency_feature_id?: number | null
-  checklist?: ChecklistItem[]
-  comments?: Comment[]
+  actual_hours?: number | null
+  order?: number
+  is_active: boolean
+  created_by?: { id: number; name: string }
+  updated_by?: { id: number; name: string }
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Member {
