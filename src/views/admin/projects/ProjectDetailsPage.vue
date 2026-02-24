@@ -60,21 +60,6 @@ async function handleDelete() {
     <SkeletonLoader v-if="projectStore.loading" type="detail" />
 
     <template v-else-if="projectStore.currentProject">
-      <AppBreadcrumb
-        :items="[
-          { label: 'Dashboard', to: '/admin' },
-          { label: 'Projects', to: '/admin/projects' },
-          { label: projectStore.currentProject.name }
-        ]"
-      />
-
-      <div class="page-header">
-        <h1 class="page-title">{{ projectStore.currentProject.name }}</h1>
-        <div class="page-header-actions">
-          <button class="btn-edit" @click="showEditModal = true">✏️ Edit</button>
-          <button class="btn-delete" @click="handleDelete">🗑️ Delete</button>
-        </div>
-      </div>
 
       <!-- Tabs -->
       <div class="tab-bar">

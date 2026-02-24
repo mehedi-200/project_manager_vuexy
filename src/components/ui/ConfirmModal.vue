@@ -9,7 +9,7 @@ const { isDark } = useTheme()
 <template>
   <teleport to="body">
     <transition name="modal">
-      <div v-if="isOpen" class="confirm-overlay" @click.self="cancel">
+      <div v-if="isOpen" class="confirm-overlay" >
         <div :class="['confirm-modal', { dark: isDark }]">
           <div class="confirm-icon">⚠️</div>
           <h3 class="confirm-title">Are you sure?</h3>

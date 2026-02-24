@@ -92,8 +92,7 @@ function handleSubmit() {
 
 <template>
   <teleport to="body">
-    <div class="modal-overlay" @click.self="close">
-      <div :class="['modal-box', { dark: isDark }]">
+    <div class="modal-overlay" >      <div :class="['modal-box', { dark: isDark }]">
 
         <div class="modal-header">
           <h2 class="modal-title">{{ mode === 'create' ? '➕ New Project' : '✏️ Edit Project' }}</h2>
