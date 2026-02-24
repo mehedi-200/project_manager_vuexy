@@ -140,6 +140,8 @@ async function handleDelete() {
   flex-direction: column;
   gap: 20px;
   min-width: 0;
+  flex: 1;
+  min-height: 0;
 }
 
 .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }

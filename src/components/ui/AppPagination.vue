@@ -15,7 +15,7 @@ const emit = defineEmits<{
   (e: 'perPageChange', perPage: number): void
 }>()
 
-const perPageOptions = [10, 15, 25, 50, 100]
+const perPageOptions = [5, 10, 15, 20, 30, 50, 100]
 
 const pages = computed(() => {
   const total = props.lastPage

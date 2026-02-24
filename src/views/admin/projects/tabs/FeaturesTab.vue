@@ -5,6 +5,7 @@ import FeatureTable from '@/components/feature/FeatureTable.vue'
 import FeatureKanban from '@/components/feature/FeatureKanban.vue'
 import FeatureFormModal from '@/components/feature/FeatureFormModal.vue'
 import FeatureDrawer from '@/components/feature/FeatureDrawer.vue'
+import AppPagination from '@/components/ui/AppPagination.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { useToast } from '@/composables/useToast.ts'
@@ -94,6 +95,14 @@ async function handleReorder(id: number, direction: 'up' | 'down') {
     addToast('Failed to reorder', 'error')
   }
 }
+
+async function changePage(page: number) {
+  await featureStore.fetchFeatures(props.projectId, page, featureStore.pagination?.per_page)
+}
+
+async function changePerPage(perPage: number) {
+  await featureStore.fetchFeatures(props.projectId, 1, perPage)
+}
 </script>
 
 <template>
@@ -123,37 +132,51 @@ async function handleReorder(id: number, direction: 'up' | 'down') {
       <button class="btn-primary" @click="openCreate">➕ Add Feature</button>
     </div>
 
-    <SkeletonLoader v-if="featureStore.loading" :count="4" height="50px" />
+    <div class="features-content">
+      <SkeletonLoader v-if="featureStore.loading" :count="4" height="50px" />
 
-    <EmptyState
-      v-else-if="!featureStore.features.length"
-      icon="🎯"
-      title="No features yet"
-      message="Break your project into features and track progress."
-      action-label="Add First Feature"
-      @action="openCreate"
+      <EmptyState
+        v-else-if="!featureStore.features.length"
+        icon="🎯"
+        title="No features yet"
+        message="Break your project into features and track progress."
+        action-label="Add First Feature"
+        @action="openCreate"
+      />
+
+      <template v-else>
+        <FeatureTable
+          v-if="viewMode === 'table'"
+          :features="featureStore.features"
+          :filter-status="filterStatus"
+          :filter-priority="filterPriority"
+          :can-edit="canEdit"
+          @edit="openEdit"
+          @delete="handleDelete"
+          @status-change="handleStatusChange"
+          @reorder="handleReorder"
+          @open="openDrawer"
+        />
+        <FeatureKanban
+          v-else
+          :features="featureStore.features"
+          @open="openDrawer"
+          @status-change="handleStatusChange"
+        />
+      </template>
+    </div>
+
+    <AppPagination
+      v-if="featureStore.pagination"
+      :current-page="featureStore.pagination.current_page"
+      :last-page="featureStore.pagination.last_page"
+      :total="featureStore.pagination.total"
+      :per-page="featureStore.pagination.per_page"
+      :from="featureStore.pagination.from"
+      :to="featureStore.pagination.to"
+      @change="changePage"
+      @per-page-change="changePerPage"
     />
-
-    <template v-else>
-      <FeatureTable
-        v-if="viewMode === 'table'"
-        :features="featureStore.features"
-        :filter-status="filterStatus"
-        :filter-priority="filterPriority"
-        :can-edit="canEdit"
-        @edit="openEdit"
-        @delete="handleDelete"
-        @status-change="handleStatusChange"
-        @reorder="handleReorder"
-        @open="openDrawer"
-      />
-      <FeatureKanban
-        v-else
-        :features="featureStore.features"
-        @open="openDrawer"
-        @status-change="handleStatusChange"
-      />
-    </template>
 
     <FeatureFormModal
       v-if="showModal"
@@ -172,10 +195,11 @@ async function handleReorder(id: number, direction: 'up' | 'down') {
 </template>
 
 <style scoped>
-.features-tab { display: flex; flex-direction: column; gap: 20px; }
+.features-tab { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 0; }
+.features-content { flex: 1; min-height: 0; padding-bottom: 20px; display: flex; flex-direction: column; gap: 20px; padding-top: 20px; }
 
 .tab-toolbar {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 20px;
 }
 
 .view-toggle {
