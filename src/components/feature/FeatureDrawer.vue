@@ -2,8 +2,8 @@
 import { ref, watch } from 'vue'
 import type { Feature, ChecklistItem, Comment } from '@/types/index.ts'
 import Badge from '@/components/ui/Badge.vue'
-import { addChecklistItem, updateChecklistItem, deleteChecklistItem } from '@/api/checklistApi.ts'
-import { addComment, deleteComment } from '@/api/commentsApi.ts'
+import { addChecklistItem, updateChecklistItem, deleteChecklistItem, getChecklistItems } from '@/api/checklistApi.ts'
+import { addComment, deleteComment, getComments } from '@/api/commentsApi.ts'
 import { authStore } from '@/stores/authStore.ts'
 import { useToast } from '@/composables/useToast.ts'
 import { useTheme } from '@/composables/useTheme.ts'
@@ -27,9 +27,18 @@ const newComment = ref('')
 const addingChecklist = ref(false)
 const postingComment = ref(false)
 
-watch(() => props.feature, () => {
+watch(() => props.feature, async (feature) => {
   checklist.value = []
   comments.value = []
+  if (!feature) return
+  try {
+    const [checklistRes, commentsRes] = await Promise.all([
+      getChecklistItems(feature.id),
+      getComments(feature.id),
+    ])
+    checklist.value = checklistRes.data.data
+    comments.value = commentsRes.data.data
+  } catch { addToast('Failed to load feature data', 'error') }
 }, { immediate: true })
 
 async function handleAddChecklist() {

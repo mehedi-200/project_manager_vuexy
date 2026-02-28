@@ -1,5 +1,8 @@
 import { api } from '@/api/axious.ts'
 
+export const getChecklistItems = (featureId: number) =>
+  api.get(`/features/${featureId}/checklist`)
+
 export const addChecklistItem = (featureId: number, data: { title: string }) =>
   api.post(`/features/${featureId}/checklist`, data)
 
