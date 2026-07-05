@@ -1,54 +1,39 @@
-# temp
+# Project Manager — Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+Vue 3 single-page application for managing projects and tasks. This is the front-end for [project_manager_api](https://github.com/mehedi-200/project_manager_api) (Laravel 12 + Sanctum).
 
-## Recommended IDE Setup
+## Tech Stack
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- Vue 3 (Composition API) + TypeScript
+- Pinia (state management)
+- Vue Router
+- Axios
+- Vite 7
+- Vitest (unit tests), ESLint + oxlint + Prettier
 
-## Recommended Browser Setup
+## Getting Started
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+Create a `.env` file pointing at the API:
 
-```sh
-npm run dev
+```
+VITE_API_URL=http://127.0.0.1:8000/api
 ```
 
-### Type-Check, Compile and Minify for Production
+Then run:
 
-```sh
-npm run build
+```bash
+npm run dev        # start dev server
+npm run build      # type-check + production build
+npm run test:unit  # run unit tests
+npm run lint       # lint & fix
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+> Requires the [project_manager_api](https://github.com/mehedi-200/project_manager_api) backend running locally.
 
-```sh
-npm run test:unit
-```
+## Author
 
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+**Mehedi** — [@mehedi-200](https://github.com/mehedi-200)
